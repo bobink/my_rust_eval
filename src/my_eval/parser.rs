@@ -1,15 +1,22 @@
-use super::eval_expression::{EvalExpression, EvalBinOpType};
+use super::eval_expression::EvalExpression;
 use super::lexer::{Lexer, LexerIterator};
 use super::token::Token;
 
+enum ReduceResultType {
+    Plus,
+    Minus,
+    Times,
+    Div
+}
+
 struct ReduceResult {
-    op: EvalBinOpType,
+    op: ReduceResultType,
     term: Box<EvalExpression>,
     right: Option<Box<ReduceResult>>
 }
 
 impl ReduceResult {
-    fn new_box(op: EvalBinOpType, term: Box<EvalExpression>, right: Option<Box<ReduceResult>>) -> Box<ReduceResult> {
+    fn new_box(op: ReduceResultType, term: Box<EvalExpression>, right: Option<Box<ReduceResult>>) -> Box<ReduceResult> {
         return Box::new(ReduceResult {op, term, right});
     }
 }
@@ -54,13 +61,22 @@ term = <num>
 term = "(" add ")"
 */
 
+fn reduce_to_eval_expression(op: ReduceResultType, left: Box<EvalExpression>, right: Box<EvalExpression>) -> Box<EvalExpression> {
+    return match op {
+        ReduceResultType::Plus => EvalExpression::new_plus_box(left, right),
+        ReduceResultType::Minus => EvalExpression::new_minus_box(left, right),
+        ReduceResultType::Times => EvalExpression::new_times_box(left, right),
+        ReduceResultType::Div => EvalExpression::new_div_box(left, right)
+    }
+}
+
 fn parse_add(stack: &mut TokenStack) -> Box<EvalExpression> {
     let mut left = parse_mul(stack);
     let mut right = parse_add_p(stack);
     loop {
         match right {
             Some(r) => {
-                left = EvalExpression::new_binop_box(r.op, left, r.term);
+                left = reduce_to_eval_expression(r.op, left, r.term);
                 right = r.right;
             }
             None => return left
@@ -84,10 +100,10 @@ fn unexpected_token(expected: Token, actual: Token) -> String {
     return format!("Unexpected token. Expected: {:?}. Got: {:?}", expected, actual);
 }
 
-fn parse_add_op(t: Token) -> EvalBinOpType {
+fn parse_add_op(t: Token) -> ReduceResultType {
     return match t {
-        Token::Plus => EvalBinOpType::Plus,
-        Token::Minus => EvalBinOpType::Minus,
+        Token::Plus => ReduceResultType::Plus,
+        Token::Minus => ReduceResultType::Minus,
         _ => panic!(unexpected_token(Token::Plus, t))
     }
 }
@@ -98,7 +114,7 @@ fn parse_mul(stack: &mut TokenStack) -> Box<EvalExpression> {
     loop {
         match right {
             Some(r) => {
-                left = EvalExpression::new_binop_box(r.op, left, r.term);
+                left = reduce_to_eval_expression(r.op, left, r.term);
                 right = r.right;
             }
             None => return left
@@ -118,10 +134,10 @@ fn parse_mul_p(stack: &mut TokenStack) -> Option<Box<ReduceResult>> {
     return Some(ReduceResult::new_box(bin_op_t, term, expr));
 }
 
-fn parse_mul_op(t: Token) -> EvalBinOpType {
+fn parse_mul_op(t: Token) -> ReduceResultType {
     return match t {
-        Token::Times => EvalBinOpType::Times,
-        Token::Div => EvalBinOpType::Div,
+        Token::Times => ReduceResultType::Times,
+        Token::Div => ReduceResultType::Div,
         _ => panic!(unexpected_token(Token::Times, t))
     }
 }

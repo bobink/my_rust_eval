@@ -4,7 +4,10 @@ use fmt::Formatter;
 
 #[derive(Eq, PartialEq, Debug)]
 pub enum EvalExpression {
-    BinOp(EvalBinOp),
+    Plus(EvalBinaryExpression),
+    Minus(EvalBinaryExpression),
+    Times(EvalBinaryExpression),
+    Div(EvalBinaryExpression),
     Value(i32)
 }
 
@@ -13,42 +16,56 @@ impl EvalExpression {
         return Box::new(EvalExpression::Value(value))
     }
 
-    pub fn new_binop(op: EvalBinOpType,
-                     left: Box<EvalExpression>,
+    pub fn new_plus(left: Box<EvalExpression>,
+                    right: Box<EvalExpression>) -> EvalExpression {
+        return EvalExpression::Plus(EvalBinaryExpression { left, right })
+    }
+
+    pub fn new_minus(left: Box<EvalExpression>,
                      right: Box<EvalExpression>) -> EvalExpression {
-        return EvalExpression::BinOp(EvalBinOp { op, left, right })
+        return EvalExpression::Minus(EvalBinaryExpression { left, right })
     }
 
-    pub fn new_binop_box(op: EvalBinOpType,
-                   left: Box<EvalExpression>,
-                   right: Box<EvalExpression>) -> Box<EvalExpression> {
-        return Box::new(EvalExpression::BinOp(EvalBinOp { op, left, right }))
+    pub fn new_times(left: Box<EvalExpression>,
+                     right: Box<EvalExpression>) -> EvalExpression {
+        return EvalExpression::Times(EvalBinaryExpression { left, right })
+    }
+
+    pub fn new_div(left: Box<EvalExpression>,
+                   right: Box<EvalExpression>) -> EvalExpression {
+        return EvalExpression::Div(EvalBinaryExpression { left, right })
+    }
+
+    pub fn new_plus_box(left: Box<EvalExpression>,
+                        right: Box<EvalExpression>) -> Box<EvalExpression> {
+        return Box::new(EvalExpression::Plus(EvalBinaryExpression { left, right }))
+    }
+
+    pub fn new_minus_box(left: Box<EvalExpression>,
+                        right: Box<EvalExpression>) -> Box<EvalExpression> {
+        return Box::new(EvalExpression::Minus(EvalBinaryExpression { left, right }))
+    }
+
+    pub fn new_times_box(left: Box<EvalExpression>,
+                        right: Box<EvalExpression>) -> Box<EvalExpression> {
+        return Box::new(EvalExpression::Times(EvalBinaryExpression { left, right }))
+    }
+
+    pub fn new_div_box(left: Box<EvalExpression>,
+                        right: Box<EvalExpression>) -> Box<EvalExpression> {
+        return Box::new(EvalExpression::Div(EvalBinaryExpression { left, right }))
     }
 }
 
-#[derive(Eq, PartialEq, Debug, Copy, Clone)]
-pub enum EvalBinOpType {
-    Plus,
-    Minus,
-    Times,
-    Div
-}
-
-pub struct EvalBinOp {
-    op: EvalBinOpType,
+pub struct EvalBinaryExpression {
     left: Box<EvalExpression>,
     right: Box<EvalExpression>
 }
 
-impl EvalBinOp {
-    pub fn new(op: EvalBinOpType,
-               left: Box<EvalExpression>,
-               right: Box<EvalExpression>) -> EvalBinOp {
-        return EvalBinOp{op, left, right};
-    }
-
-    pub fn get_op(&self) -> EvalBinOpType {
-        return self.op;
+impl EvalBinaryExpression {
+    pub fn new(left: Box<EvalExpression>,
+               right: Box<EvalExpression>) -> EvalBinaryExpression {
+        return EvalBinaryExpression {left, right};
     }
 
     pub fn get_left(&self) -> &EvalExpression {
@@ -60,20 +77,18 @@ impl EvalBinOp {
     }
 }
 
-impl PartialEq for EvalBinOp {
-    fn eq(&self, other: &EvalBinOp) -> bool {
-        return self.get_op() == other.get_op()
-            && *self.get_left() == *other.get_left()
+impl PartialEq for EvalBinaryExpression {
+    fn eq(&self, other: &EvalBinaryExpression) -> bool {
+        return *self.get_left() == *other.get_left()
             && *self.get_right() == *other.get_right();
     }
 }
 
-impl Eq for EvalBinOp {}
+impl Eq for EvalBinaryExpression {}
 
-impl Debug for EvalBinOp {
+impl Debug for EvalBinaryExpression {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        f.debug_struct("EvalBinOp")
-            .field("op", &self.get_op())
+        f.debug_struct("Binary")
             .field("left", self.get_left())
             .field("right", self.get_right())
             .finish()
@@ -100,35 +115,51 @@ mod tests {
     }
 
     #[test]
-    fn eval_bin_op() {
-        let root = EvalBinOp::new(EvalBinOpType::Plus,
-                                  EvalExpression::new_value_box(4),
-                                  EvalExpression::new_value_box(1));
-        assert_eq!(EvalBinOpType::Plus, root.get_op());
+    fn eval_binary_expression() {
+        let root = EvalBinaryExpression::new(
+            EvalExpression::new_value_box(4),
+            EvalExpression::new_value_box(1));
         assert_eq!(EvalExpression::Value(4), *root.get_left());
         assert_eq!(EvalExpression::Value(1), *root.get_right());
     }
 
     #[test]
-    fn eval_bin_op_debug_string() {
-        assert_eq!("EvalBinOp { op: Plus, left: Value(4), right: Value(1) }", format!("{:?}", EvalBinOp::new(
-            EvalBinOpType::Plus,
+    fn eval_plus_expression_debug_string() {
+        assert_eq!("Plus(Binary { left: Value(4), right: Value(1) })", format!("{:?}", EvalExpression::new_plus(
             EvalExpression::new_value_box(4),
             EvalExpression::new_value_box(1))));
     }
 
     #[test]
-    fn eval_bin_op_eq() {
-        let a1: Box<EvalExpression> = EvalExpression::new_binop_box(
-            EvalBinOpType::Plus,
+    fn eval_minus_expression_debug_string() {
+        assert_eq!("Minus(Binary { left: Value(4), right: Value(1) })", format!("{:?}", EvalExpression::new_minus(
+            EvalExpression::new_value_box(4),
+            EvalExpression::new_value_box(1))));
+    }
+
+    #[test]
+    fn eval_times_expression_debug_string() {
+        assert_eq!("Times(Binary { left: Value(4), right: Value(1) })", format!("{:?}", EvalExpression::new_times(
+            EvalExpression::new_value_box(4),
+            EvalExpression::new_value_box(1))));
+    }
+
+    #[test]
+    fn eval_div_expression_debug_string() {
+        assert_eq!("Div(Binary { left: Value(4), right: Value(1) })", format!("{:?}", EvalExpression::new_div(
+            EvalExpression::new_value_box(4),
+            EvalExpression::new_value_box(1))));
+    }
+
+    #[test]
+    fn eval_binary_expression_eq() {
+        let a1: Box<EvalExpression> = EvalExpression::new_plus_box(
             EvalExpression::new_value_box(4),
             EvalExpression::new_value_box(1));
-        let a2: Box<EvalExpression> = EvalExpression::new_binop_box(
-            EvalBinOpType::Plus,
+        let a2: Box<EvalExpression> = EvalExpression::new_plus_box(
             EvalExpression::new_value_box(4),
             EvalExpression::new_value_box(1));
-        let a3: Box<EvalExpression> = EvalExpression::new_binop_box(
-            EvalBinOpType::Minus,
+        let a3: Box<EvalExpression> = EvalExpression::new_minus_box(
             EvalExpression::new_value_box(4),
             EvalExpression::new_value_box(1));
         assert_eq!(*a1, *a1);
@@ -138,8 +169,7 @@ mod tests {
 
     #[test]
     fn eval_expression_eq() {
-        let a1: Box<EvalExpression> = EvalExpression::new_binop_box(
-            EvalBinOpType::Plus,
+        let a1: Box<EvalExpression> = EvalExpression::new_plus_box(
             EvalExpression::new_value_box(4),
             EvalExpression::new_value_box(1));
         let a2: Box<EvalExpression> = EvalExpression::new_value_box(4);
