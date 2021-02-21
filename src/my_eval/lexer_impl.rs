@@ -1,5 +1,5 @@
 use super::lexer::{Lexer, LexerIterator};
-use super::token::{Token, TokenType};
+use super::token::Token;
 use super::reader::{Reader, ReaderIterator};
 
 struct LexerImpl {
@@ -34,17 +34,13 @@ impl<'a> LexerIteratorImpl<'a> {
     }
 }
 
-fn token(ttype : TokenType) -> Option<Token>{
-    return Some(Token::new_token(ttype));
-}
-
-fn to_10_digit(c: char) -> u32 {
-    c.to_digit(10).unwrap()
+fn to_10_digit(c: char) -> i32 {
+    c.to_digit(10).unwrap() as i32
 }
 
 impl<'a> LexerIteratorImpl<'a> {
-    fn read_token_value(&mut self, c: char) -> u32 {
-        let mut value: u32 = to_10_digit(c);
+    fn read_token_value(&mut self, c: char) -> i32 {
+        let mut value: i32 = to_10_digit(c);
         loop {
             match self.it.next() {
                 Some(tmp) if ('0'..='9').contains(&tmp) => value = value * 10 + to_10_digit(tmp),
@@ -70,16 +66,16 @@ impl<'a> LexerIterator for LexerIteratorImpl<'a> {
                 None => return None
             }
         }
-        match c {
-            '+' => return token(TokenType::Plus),
-            '-' => return token(TokenType::Minus),
-            '*' => return token(TokenType::Times),
-            '/' => return token(TokenType::Div),
-            '(' => return token(TokenType::LeftParenthesis),
-            ')' => return token(TokenType::RightParenthesis),
-            '0'..='9' => Some(Token::new_value(self.read_token_value(c))),
+        return Some(match c {
+            '+' => Token::Plus,
+            '-' => Token::Minus,
+            '*' => Token::Times,
+            '/' => Token::Div,
+            '(' => Token::LeftParenthesis,
+            ')' => Token::RightParenthesis,
+            '0'..='9' => Token::Value(self.read_token_value(c)),
             _ => panic!(format!("Unsupported character {}", c))
-        }
+        })
     }
 }
 
@@ -102,9 +98,9 @@ mod tests {
         let lexer = string_lexer("11 + 3");
         let mut b = lexer.tokens();
         let tokens = b.deref_mut();
-        assert_eq!(Some(Token::new_value(11)), tokens.next());
-        assert_eq!(Some(Token::new_token(TokenType::Plus)), tokens.next());
-        assert_eq!(Some(Token::new_value(3)), tokens.next());
+        assert_eq!(Some(Token::Value(11)), tokens.next());
+        assert_eq!(Some(Token::Plus), tokens.next());
+        assert_eq!(Some(Token::Value(3)), tokens.next());
         assert_eq!(None, tokens.next());
     }
 
@@ -113,11 +109,11 @@ mod tests {
         let lexer = string_lexer("   325      +123*    66");
         let mut b = lexer.tokens();
         let tokens = b.deref_mut();
-        assert_eq!(Some(Token::new_value(325)), tokens.next());
-        assert_eq!(Some(Token::new_token(TokenType::Plus)), tokens.next());
-        assert_eq!(Some(Token::new_value(123)), tokens.next());
-        assert_eq!(Some(Token::new_token(TokenType::Times)), tokens.next());
-        assert_eq!(Some(Token::new_value(66)), tokens.next());
+        assert_eq!(Some(Token::Value(325)), tokens.next());
+        assert_eq!(Some(Token::Plus), tokens.next());
+        assert_eq!(Some(Token::Value(123)), tokens.next());
+        assert_eq!(Some(Token::Times), tokens.next());
+        assert_eq!(Some(Token::Value(66)), tokens.next());
         assert_eq!(None, tokens.next());
     }
 

@@ -12,7 +12,7 @@ use lexer_impl::lexer_impl;
 use reader_impl::string_reader;
 use evaluator::evaluate;
 
-pub fn my_eval(s: &str) -> u32 {
+pub fn my_eval(s: &str) -> i32 {
     let lexer = lexer_impl(string_reader(s));
     let p = parse(lexer.as_ref());
     return evaluate(p.as_ref());
