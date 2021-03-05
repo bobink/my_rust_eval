@@ -10,6 +10,7 @@ A basic arithmetic evaluator is a good project because it is not too small nor b
 - cargo
 - unit tests in rust
 - modules and crates organization
+- enums in rust are great, it can replace the visitor design pattern. 
 
 ### Usage
 
