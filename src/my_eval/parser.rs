@@ -63,10 +63,10 @@ term = "(" add ")"
 
 fn reduce_to_eval_expression(op: ReduceResultType, left: Box<EvalExpression>, right: Box<EvalExpression>) -> Box<EvalExpression> {
     return match op {
-        ReduceResultType::Plus => EvalExpression::new_plus_box(left, right),
-        ReduceResultType::Minus => EvalExpression::new_minus_box(left, right),
-        ReduceResultType::Times => EvalExpression::new_times_box(left, right),
-        ReduceResultType::Div => EvalExpression::new_div_box(left, right)
+        ReduceResultType::Plus => EvalExpression::plus_box(left, right),
+        ReduceResultType::Minus => EvalExpression::minus_box(left, right),
+        ReduceResultType::Times => EvalExpression::times_box(left, right),
+        ReduceResultType::Div => EvalExpression::div_box(left, right)
     }
 }
 
@@ -145,7 +145,7 @@ fn parse_mul_op(t: Token) -> ReduceResultType {
 fn parse_term(stack: &mut TokenStack) -> Box<EvalExpression> {
     let n = next_token(stack);
     return match n {
-        Token::Value(value) => EvalExpression::new_value_box(value),
+        Token::Value(value) => EvalExpression::value_box(value),
         Token::LeftParenthesis => {
             let expr = parse_add(stack);
             let n2 = next_token(stack);

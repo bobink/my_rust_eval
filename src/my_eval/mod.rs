@@ -71,6 +71,11 @@ mod tests {
     }
 
     #[test]
+    fn test_three_minus_five() {
+        assert_eq!(-2, my_eval("3 - 5"));
+    }
+
+    #[test]
     fn test_big_expression() {
         let str = "5 + 9 * 89 - 23 + 65 * 4 + 42 - 23 * 2 * 3";
         assert_eq!(947, my_eval(str));
