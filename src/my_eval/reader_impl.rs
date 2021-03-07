@@ -1,5 +1,5 @@
 use std::str::Chars;
-use super::reader::{Reader, ReaderIterator};
+use super::reader::Reader;
 
 struct StringReader {
     str: String
@@ -18,7 +18,7 @@ impl StringReader {
 }
 
 impl Reader for StringReader {
-    fn chars<'a>(&'a self) -> Box<dyn ReaderIterator + 'a> {
+    fn chars<'a>(&'a self) -> Box<dyn Iterator<Item=char> + 'a> {
         return Box::new(StringReaderIterator::new(self.str.chars()));
     }
 }
@@ -31,7 +31,9 @@ impl<'a> StringReaderIterator<'a> {
     }
 }
 
-impl<'a> ReaderIterator for StringReaderIterator<'a> {
+impl<'a> Iterator for StringReaderIterator<'a> {
+    type Item = char;
+
     fn next(&mut self) -> Option<char> {
         return self.chars.next();
     }
@@ -46,25 +48,20 @@ mod tests {
     use super::*;
     use std::ops::DerefMut;
 
+    fn char_vec_of_string(s: &str) -> Vec<char> {
+        return string_reader(s).chars().deref_mut().collect();
+    }
+
     #[test]
     fn string_reader_bobink() {
-        let reader = string_reader("bobink");
-        let mut b = reader.chars();
-        let chars = b.deref_mut();
-        assert_eq!(Some('b'), chars.next());
-        assert_eq!(Some('o'), chars.next());
-        assert_eq!(Some('b'), chars.next());
-        assert_eq!(Some('i'), chars.next());
-        assert_eq!(Some('n'), chars.next());
-        assert_eq!(Some('k'), chars.next());
-        assert_eq!(None, chars.next());
+        let actual = char_vec_of_string("bobink");
+        assert_eq!(vec!['b', 'o', 'b', 'i', 'n', 'k'], actual);
     }
 
     #[test]
     fn string_reader_empty_string() {
-        let reader = string_reader("");
-        let mut b = reader.chars();
-        let chars = b.deref_mut();
-        assert_eq!(None, chars.next());
+        let actual = char_vec_of_string("");
+        let expected : Vec<char> = vec![];
+        assert_eq!(expected, actual);
     }
 }

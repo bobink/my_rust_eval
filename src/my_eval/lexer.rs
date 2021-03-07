@@ -1,9 +1,6 @@
 use super::token::Token;
 
 pub trait Lexer {
-    fn tokens<'a>(&'a self) -> Box<dyn LexerIterator + 'a>;
+    fn tokens(& self) -> Box<dyn Iterator<Item=Token> + '_>;
 }
 
-pub trait LexerIterator {
-    fn next(&mut self) -> Option<Token>;
-}

@@ -1,5 +1,5 @@
 use super::eval_expression::EvalExpression;
-use super::lexer::{Lexer, LexerIterator};
+use super::lexer::Lexer;
 use super::token::Token;
 
 enum ReduceResultType {
@@ -22,12 +22,12 @@ impl ReduceResult {
 }
 
 struct TokenStack<'a> {
-    tokens: Box<dyn LexerIterator + 'a>,
+    tokens: Box<dyn Iterator<Item=Token> + 'a>,
     head: Option<Token>
 }
 
 impl<'b> TokenStack<'b> {
-    fn new<'a>(tokens: Box<dyn LexerIterator + 'a>) -> TokenStack<'a> {
+    fn new<'a>(tokens: Box<dyn Iterator<Item=Token> + 'a>) -> TokenStack<'a> {
         return TokenStack {tokens, head: None}
     }
 

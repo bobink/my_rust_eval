@@ -1,6 +1,6 @@
-use super::lexer::{Lexer, LexerIterator};
+use super::lexer::Lexer;
 use super::token::Token;
-use super::reader::{Reader, ReaderIterator};
+use super::reader::Reader;
 
 struct LexerImpl {
     reader: Box<dyn Reader>
@@ -8,7 +8,7 @@ struct LexerImpl {
 
 struct LexerIteratorImpl<'a> {
     last: char,
-    it: Box<dyn ReaderIterator + 'a>
+    it: Box<dyn Iterator<Item=char> + 'a>
 }
 
 impl LexerImpl {
@@ -20,13 +20,13 @@ impl LexerImpl {
 }
 
 impl Lexer for LexerImpl {
-    fn tokens<'a>(&'a self) -> Box<dyn LexerIterator + 'a> {
+    fn tokens(& self) -> Box<dyn Iterator<Item=Token> + '_> {
         return Box::new(LexerIteratorImpl::new(self.reader.chars()));
     }
 }
 
 impl<'a> LexerIteratorImpl<'a> {
-    fn new(it: Box<dyn ReaderIterator + 'a>) -> LexerIteratorImpl<'a> {
+    fn new(it: Box<dyn Iterator<Item=char> + 'a>) -> LexerIteratorImpl<'a> {
         LexerIteratorImpl {
             last: ' ',
             it
@@ -55,7 +55,9 @@ impl<'a> LexerIteratorImpl<'a> {
     }
 }
 
-impl<'a> LexerIterator for LexerIteratorImpl<'a> {
+impl<'a> Iterator for LexerIteratorImpl<'a> {
+    type Item = Token;
+
     fn next(&mut self) -> Option<Token> {
         let mut c = self.last;
         self.last = ' ';
@@ -89,39 +91,28 @@ mod tests {
     use crate::my_eval::reader_impl::string_reader;
     use std::ops::DerefMut;
 
-    fn string_lexer(s: &str) -> Box<dyn Lexer> {
-        return lexer_impl(string_reader(s));
+    fn token_vec_of_string(s: &str) -> Vec<Token> {
+        return lexer_impl(string_reader(s)).tokens().deref_mut().collect();
     }
 
     #[test]
     fn lex_eleven_plus_three() {
-        let lexer = string_lexer("11 + 3");
-        let mut b = lexer.tokens();
-        let tokens = b.deref_mut();
-        assert_eq!(Some(Token::Value(11)), tokens.next());
-        assert_eq!(Some(Token::Plus), tokens.next());
-        assert_eq!(Some(Token::Value(3)), tokens.next());
-        assert_eq!(None, tokens.next());
+        let actual = token_vec_of_string("11 + 3");
+        assert_eq!(vec![Token::Value(11), Token::Plus, Token::Value(3)], actual);
     }
 
     #[test]
     fn lex_big_whitespace() {
-        let lexer = string_lexer("   325      +123*    66");
-        let mut b = lexer.tokens();
-        let tokens = b.deref_mut();
-        assert_eq!(Some(Token::Value(325)), tokens.next());
-        assert_eq!(Some(Token::Plus), tokens.next());
-        assert_eq!(Some(Token::Value(123)), tokens.next());
-        assert_eq!(Some(Token::Times), tokens.next());
-        assert_eq!(Some(Token::Value(66)), tokens.next());
-        assert_eq!(None, tokens.next());
+        let actual = token_vec_of_string("   325      +123*    66");
+        let expected = vec![Token::Value(325), Token::Plus, Token::Value(123),
+                            Token::Times, Token::Value(66)];
+        assert_eq!(expected, actual);
     }
 
     #[test]
     fn lex_empty() {
-        let lexer = string_lexer("   ");
-        let mut b = lexer.tokens();
-        let tokens = b.deref_mut();
-        assert_eq!(None, tokens.next());
+        let actual = token_vec_of_string("   ");
+        let expected: Vec<Token> = vec![];
+        assert_eq!(expected, actual);
     }
 }
