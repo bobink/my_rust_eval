@@ -1,35 +1,50 @@
 use super::lexer::Lexer;
-use super::token::Token;
 use super::reader::Reader;
+use crate::my_eval::token::Token;
+use std::marker::PhantomData;
 
-struct LexerImpl {
-    reader: Box<dyn Reader>
+pub struct LexerImpl<'a, RIT, R>
+    where RIT: Iterator<Item=char> + 'a, R: Reader<'a, RIT> {
+
+    reader: R,
+    phantom: PhantomData<&'a RIT>,
 }
 
-struct LexerIteratorImpl<'a> {
+pub struct LexerIteratorImpl<'a, RIT>
+    where RIT: Iterator<Item=char> + 'a {
+
     last: char,
-    it: Box<dyn Iterator<Item=char> + 'a>
+    it: RIT,
+    phantom: PhantomData<&'a RIT>,
 }
 
-impl LexerImpl {
-    fn new(reader: Box<dyn Reader>) -> LexerImpl {
+impl<'a, RIT, R> LexerImpl<'a, RIT, R>
+    where RIT: Iterator<Item=char> + 'a, R: Reader<'a, RIT> {
+
+    fn new(reader: R) -> LexerImpl<'a, RIT, R> {
         LexerImpl {
-            reader
+            reader,
+            phantom: PhantomData
         }
     }
 }
 
-impl Lexer for LexerImpl {
-    fn tokens(& self) -> Box<dyn Iterator<Item=Token> + '_> {
-        return Box::new(LexerIteratorImpl::new(self.reader.chars()));
+impl<'a, RIT, R> Lexer<'a, LexerIteratorImpl<'a, RIT>> for LexerImpl<'a, RIT, R>
+    where RIT: Iterator<Item=char> + 'a, R: Reader<'a, RIT> {
+
+    fn tokens(&'a self) -> LexerIteratorImpl<'a, RIT> {
+        return LexerIteratorImpl::new(self.reader.chars());
     }
 }
 
-impl<'a> LexerIteratorImpl<'a> {
-    fn new(it: Box<dyn Iterator<Item=char> + 'a>) -> LexerIteratorImpl<'a> {
+impl<'a, RIT> LexerIteratorImpl<'a, RIT>
+    where RIT: Iterator<Item=char> + 'a {
+
+    fn new(it: RIT) -> LexerIteratorImpl<'a, RIT> {
         LexerIteratorImpl {
             last: ' ',
-            it
+            it,
+            phantom: PhantomData
         }
     }
 }
@@ -38,7 +53,9 @@ fn to_10_digit(c: char) -> i32 {
     c.to_digit(10).unwrap() as i32
 }
 
-impl<'a> LexerIteratorImpl<'a> {
+impl<'a, RIT> LexerIteratorImpl<'a, RIT>
+    where RIT: Iterator<Item=char> + 'a {
+
     fn read_token_value(&mut self, c: char) -> i32 {
         let mut value: i32 = to_10_digit(c);
         loop {
@@ -47,7 +64,7 @@ impl<'a> LexerIteratorImpl<'a> {
                 Some(tmp) => {
                     self.last = tmp;
                     break;
-                },
+                }
                 None => break
             }
         }
@@ -55,7 +72,8 @@ impl<'a> LexerIteratorImpl<'a> {
     }
 }
 
-impl<'a> Iterator for LexerIteratorImpl<'a> {
+impl<'a, RIT> Iterator for LexerIteratorImpl<'a, RIT>
+    where RIT: Iterator<Item=char> + 'a {
     type Item = Token;
 
     fn next(&mut self) -> Option<Token> {
@@ -77,22 +95,23 @@ impl<'a> Iterator for LexerIteratorImpl<'a> {
             ')' => Token::RightParenthesis,
             '0'..='9' => Token::Value(self.read_token_value(c)),
             _ => panic!(format!("Unsupported character {}", c))
-        })
+        });
     }
 }
 
-pub fn lexer_impl(reader: Box<dyn Reader>) -> Box<dyn Lexer> {
-    return Box::new(LexerImpl::new(reader));
+pub fn lexer_impl<'a, RIT, R>(reader: R) -> LexerImpl<'a, RIT, R>
+    where RIT: Iterator<Item=char> + 'a, R: Reader<'a, RIT> {
+
+    return LexerImpl::new(reader);
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::my_eval::reader_impl::string_reader;
-    use std::ops::DerefMut;
+    use crate::my_eval_static::reader_impl::string_reader;
 
     fn token_vec_of_string(s: &str) -> Vec<Token> {
-        return lexer_impl(string_reader(s)).tokens().deref_mut().collect();
+        return lexer_impl(string_reader(s)).tokens().collect();
     }
 
     #[test]

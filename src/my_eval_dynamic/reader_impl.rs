@@ -10,9 +10,9 @@ struct StringReaderIterator<'a> {
 }
 
 impl StringReader {
-    fn new(str: String) -> StringReader {
+    fn new(s: &str) -> StringReader {
         StringReader {
-            str
+            str: String::from(s)
         }
     }
 }
@@ -40,7 +40,7 @@ impl<'a> Iterator for StringReaderIterator<'a> {
 }
 
 pub fn string_reader(s: &str) -> Box<dyn Reader> {
-    return Box::new(StringReader::new(String::from(s)));
+    return Box::new(StringReader::new(s));
 }
 
 #[cfg(test)]
@@ -61,7 +61,7 @@ mod tests {
     #[test]
     fn string_reader_empty_string() {
         let actual = char_vec_of_string("");
-        let expected : Vec<char> = vec![];
+        let expected: Vec<char> = vec![];
         assert_eq!(expected, actual);
     }
 }
